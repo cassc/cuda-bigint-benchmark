@@ -19,12 +19,13 @@ set(CMAKE_CUDA_ARCHITECTURES ${CUDA_COMPUTE_CAPABILITY})
 
 find_library(CUDART_LIBRARY cudart ${CMAKE_CUDA_IMPLICIT_LINK_DIRECTORIES})
 add_subdirectory(bigint)
+add_subdirectory(CGBN)
 
 find_package(benchmark REQUIRED)
-file(GLOB BENCHMARK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cu")
+file(GLOB BENCHMARK_SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*")
 message(STATUS "Benchmark sources: ${BENCHMARK_SOURCES}")
 
-add_executable(${PROJECT_NAME}_benchmark ${BENCHMARK_SOURCES} $<TARGET_OBJECTS:CuBigInt>)
+add_executable(${PROJECT_NAME}_benchmark ${BENCHMARK_SOURCES} $<TARGET_OBJECTS:CuBigInt> $<TARGET_OBJECTS:CGBN>)
 
 set_target_properties(${PROJECT_NAME}_benchmark
    PROPERTIES
@@ -33,6 +34,6 @@ set_target_properties(${PROJECT_NAME}_benchmark
        POSITION_INDEPENDENT_CODE ON
      )
 
-target_link_libraries(${PROJECT_NAME}_benchmark PRIVATE CuBigInt)
+target_link_libraries(${PROJECT_NAME}_benchmark PRIVATE CuBigInt CGBN)
 target_link_libraries(${PROJECT_NAME}_benchmark PRIVATE ${CUDART_LIBRARY})
 target_link_libraries(${PROJECT_NAME}_benchmark PRIVATE benchmark::benchmark)

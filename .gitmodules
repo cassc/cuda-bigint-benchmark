@@ -1,3 +1,6 @@
 [submodule "bigint"]
 	path = bigint
 	url = https://github.com/cassc/bigint
+[submodule "CGBN"]
+	path = CGBN
+	url = https://github.com/cassc/CGBN.git
