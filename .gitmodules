@@ -1,0 +1,3 @@
+[submodule "bigint"]
+	path = bigint
+	url = https://github.com/cassc/bigint
