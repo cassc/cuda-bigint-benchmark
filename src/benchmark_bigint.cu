@@ -97,7 +97,7 @@ void BM_BigIntSimpleMath(benchmark::State& state)
   for (auto _: state) {
     cudaEventRecord(start);
 
-    BigIntInitTest_kernel<<<1, 1>>>(device_a);
+    BigIntInitTest_kernel<<<1, 8>>>(device_a);
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
