@@ -54,22 +54,22 @@ __global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words,
   env_t::cgbn_t  a, b, result, r;
 
   printf("First word\n");
-  for (auto i = 0; i < 8; i++) {
-    printf("%u\n", words->_limbs[i]);
-  }
+
+  assert(1558243763 == words->_limbs[4]);
+  assert(1715966102 == words->_limbs[5]);
+  assert(2273913630 == words->_limbs[6]);
+  assert(2079934641 == words->_limbs[7]);
 
   cgbn_load(bn_env, a, words);
-  cgbn_load(bn_env, b, words + 1);
-  cgbn_load(bn_env, r, words + 2);
-  cgbn_mul(bn_env, result, a, b);
-
 
   printf("a %u\n", cgbn_get_ui32(bn_env, a)); // todo this value is incorrect
-
   cgbn_set_ui32(bn_env, result, 0);
   auto equal = cgbn_compare(bn_env, result, a);
   assert(equal != 0);
 
+  cgbn_load(bn_env, b, words + 1);
+  cgbn_load(bn_env, r, words + 2);
+  cgbn_mul(bn_env, result, a, b);
 
   auto match = cgbn_compare(bn_env, result, r);
   assert(match == 0);
