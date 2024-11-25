@@ -46,11 +46,14 @@ typedef cgbn_mem_t<BITS> word_t;
 
 // define the kernel
 __global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
-  auto instance_idx = (threadIdx.x + blockIdx.x * blockDim.x) / TPI;
-  if (instance_idx != 0) return;
-  printf("instance_idx %d threadIdx.x %d\n", instance_idx, threadIdx.x);
+  int32_t instance;
 
-  context_t      bn_context(cgbn_report_monitor, report, instance_idx);
+  instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
+  if(instance>=1)
+    return;
+
+
+  context_t      bn_context(cgbn_report_monitor, report, instance);
   env_t          bn_env(bn_context.env<env_t>());
   env_t::cgbn_t  a, b, result, r;
 
@@ -108,10 +111,6 @@ void BM_CGBNSimpleMath(benchmark::State& state)
   word_t *device_a;
   CUDA_CHECK(cudaMalloc((void **)&device_a, sizeof(word_t)*3));
   CUDA_CHECK(cudaMemcpy(device_a, a, sizeof(word_t)*3, cudaMemcpyHostToDevice));
-
-  for (auto i =0; i < 3; i++){
-    CUDA_CHECK(cudaMemcpy((device_a+i)->_limbs, (a+i)->_limbs, sizeof(uint32_t)*8, cudaMemcpyHostToDevice));
-  }
 
   // create a cgbn_error_report for CGBN to report back errors
   CUDA_CHECK(cgbn_error_report_alloc(&report));
