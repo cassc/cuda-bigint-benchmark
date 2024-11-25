@@ -45,7 +45,7 @@ typedef cgbn_env_t<context_t, BITS> env_t;
 typedef cgbn_mem_t<BITS> word_t;
 
 // define the kernel
-__global__ void add_kernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
+__global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
   auto idx = threadIdx.x + blockIdx.x * blockDim.x;
   if (idx != 0) return;
 
@@ -53,12 +53,22 @@ __global__ void add_kernel(cgbn_error_report_t *report, word_t *words, uint32_t 
   env_t          bn_env(bn_context.env<env_t>());
   env_t::cgbn_t  a, b, result, r;
 
+  printf("First word\n");
+  for (auto i = 0; i < 8; i++) {
+    printf("%u\n", words->_limbs[i]);
+  }
+
   cgbn_load(bn_env, a, words);
   cgbn_load(bn_env, b, words + 1);
   cgbn_load(bn_env, r, words + 2);
   cgbn_mul(bn_env, result, a, b);
 
-  printf("a %d\n", cgbn_get_ui32(bn_env, a)); // todo this value is incorrect
+
+  printf("a %u\n", cgbn_get_ui32(bn_env, a)); // todo this value is incorrect
+
+  cgbn_set_ui32(bn_env, result, 0);
+  auto equal = cgbn_compare(bn_env, result, a);
+  assert(equal != 0);
 
 
   auto match = cgbn_compare(bn_env, result, r);
@@ -76,13 +86,13 @@ void BM_CGBNSimpleMath(benchmark::State& state)
     for (auto j = 0; j < 8; j++){
       (a+i)->_limbs[j] = 0;
     }
-    // (a+i)->_limbs[4] = 1558243763;
-    // (a+i)->_limbs[5] = 1715966102;
-    // (a+i)->_limbs[6] = 2273913630;
+    (a+i)->_limbs[4] = 1558243763;
+    (a+i)->_limbs[5] = 1715966102;
+    (a+i)->_limbs[6] = 2273913630;
     (a+i)->_limbs[7] = 2079934641;
   }
 
-  // [565341586, 3234757391, 2935691132, 300816443, 895749092, 1824205869, 2220097044, 2465598049]
+
   (a+2)->_limbs[0] = 565341586;
   (a+2)->_limbs[1] = 3234757391;
   (a+2)->_limbs[2] = 2935691132;
@@ -98,6 +108,10 @@ void BM_CGBNSimpleMath(benchmark::State& state)
   CUDA_CHECK(cudaMalloc((void **)&device_a, sizeof(word_t)*3));
   CUDA_CHECK(cudaMemcpy(device_a, a, sizeof(word_t)*3, cudaMemcpyHostToDevice));
 
+  for (auto i =0; i < 3; i++){
+    CUDA_CHECK(cudaMemcpy((device_a+i)->_limbs, (a+i)->_limbs, sizeof(uint32_t)*8, cudaMemcpyHostToDevice));
+  }
+
   // create a cgbn_error_report for CGBN to report back errors
   CUDA_CHECK(cgbn_error_report_alloc(&report));
 
@@ -105,7 +119,7 @@ void BM_CGBNSimpleMath(benchmark::State& state)
 
   CUDA_CHECK(cudaDeviceSynchronize());
 
-  add_kernel<<<1, TPI>>>(report, device_a, 3);
+  CGBNSimpleMathKernel<<<1, TPI>>>(report, device_a, 3);
 
   // error report uses managed memory, so we sync the device (or stream) and check for cgbn errors
   CUDA_CHECK(cudaDeviceSynchronize());
