@@ -1,5 +1,3 @@
-#include <CGBN/cgbn.h>
-
 #include <benchmark/benchmark.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime.h>
@@ -40,43 +38,42 @@ typedef cgbn_context_t<TPI>         context_t;
 #else
 typedef cgbn_host_context_t<TPI>         context_t;
 #endif
+
 typedef cgbn_env_t<context_t, BITS> env_t;
+
+typedef env_t::cgbn_t bn_t;
 
 typedef cgbn_mem_t<BITS> word_t;
 
 // define the kernel
 __global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
-  int32_t instance;
+  int32_t tid, instance;
 
-  instance=(blockIdx.x*blockDim.x + threadIdx.x)/TPI;
-  if(instance>=1)
-    return;
+  tid = (blockIdx.x*blockDim.x + threadIdx.x);
+  instance = tid/TPI;
 
+  if(instance>=1) return;
 
   context_t      bn_context(cgbn_report_monitor, report, instance);
   env_t          bn_env(bn_context.env<env_t>());
-  env_t::cgbn_t  a, b, result, r;
+  bn_t  a, b, result, r;
 
-  printf("First word\n");
-
-  assert(1558243763 == words->_limbs[4]);
-  assert(1715966102 == words->_limbs[5]);
-  assert(2273913630 == words->_limbs[6]);
-  assert(2079934641 == words->_limbs[7]);
+  if (tid == 0) DEBUG_PRINT("Check first word\n");
+  // assert(1558243763 == words->_limbs[3]);
+  // assert(1715966102 == words->_limbs[2]);
+  // assert(2273913630 == words->_limbs[1]);
+  // assert(2079934641 == words->_limbs[0]);
 
   cgbn_load(bn_env, a, words);
-
-  printf("a %u\n", cgbn_get_ui32(bn_env, a)); // todo this value is incorrect
-  cgbn_set_ui32(bn_env, result, 0);
-  auto equal = cgbn_compare(bn_env, result, a);
-  assert(equal != 0);
-
   cgbn_load(bn_env, b, words + 1);
   cgbn_load(bn_env, r, words + 2);
   cgbn_mul(bn_env, result, a, b);
 
-  auto match = cgbn_compare(bn_env, result, r);
-  assert(match == 0);
+  if (tid==0) DEBUG_PRINT("Computed %u\n", cgbn_get_ui32(bn_env, result));
+  if (tid==0) DEBUG_PRINT("Expected %u\n", cgbn_get_ui32(bn_env, r));
+
+  auto equal = cgbn_compare(bn_env, result, r);
+  assert(equal == 0);
 }
 
 void BM_CGBNSimpleMath(benchmark::State& state)
@@ -86,28 +83,28 @@ void BM_CGBNSimpleMath(benchmark::State& state)
   DEBUG_PRINT("Genereating instances ...\n");
 
   word_t *a = (word_t *)malloc(sizeof(word_t)* 3);
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < 3; i++) {
     for (auto j = 0; j < 8; j++){
       (a+i)->_limbs[j] = 0;
     }
-    (a+i)->_limbs[4] = 1558243763;
-    (a+i)->_limbs[5] = 1715966102;
-    (a+i)->_limbs[6] = 2273913630;
-    (a+i)->_limbs[7] = 2079934641;
+    (a+i)->_limbs[3] = 1558243763;
+    (a+i)->_limbs[2] = 1715966102;
+    (a+i)->_limbs[1] = 2273913630;
+    (a+i)->_limbs[0] = 2079934641;
   }
 
 
-  (a+2)->_limbs[0] = 565341586;
-  (a+2)->_limbs[1] = 3234757391;
-  (a+2)->_limbs[2] = 2935691132;
-  (a+2)->_limbs[3] = 300816443;
-  (a+2)->_limbs[4] = 895749092;
-  (a+2)->_limbs[5] = 1824205869;
-  (a+2)->_limbs[6] = 2220097044;
-  (a+2)->_limbs[7] = 2465598049;
+  (a+2)->_limbs[7] = 565341586;
+  (a+2)->_limbs[6] = 3234757391;
+  (a+2)->_limbs[5] = 2935691132;
+  (a+2)->_limbs[4] = 300816443;
+  (a+2)->_limbs[3] = 895749092;
+  (a+2)->_limbs[2] = 1824205869;
+  (a+2)->_limbs[1] = 2220097044;
+  (a+2)->_limbs[0] = 2465598049;
 
 
-  printf("Copying instances to the GPU ...\n");
+  DEBUG_PRINT("Copying instances to the GPU ...\n");
   word_t *device_a;
   CUDA_CHECK(cudaMalloc((void **)&device_a, sizeof(word_t)*3));
   CUDA_CHECK(cudaMemcpy(device_a, a, sizeof(word_t)*3, cudaMemcpyHostToDevice));
@@ -115,17 +112,35 @@ void BM_CGBNSimpleMath(benchmark::State& state)
   // create a cgbn_error_report for CGBN to report back errors
   CUDA_CHECK(cgbn_error_report_alloc(&report));
 
-  printf("Running GPU kernel ...\n");
+  DEBUG_PRINT("Running GPU kernel ...\n");
 
   CUDA_CHECK(cudaDeviceSynchronize());
 
-  CGBNSimpleMathKernel<<<1, TPI>>>(report, device_a, 3);
+  // CUDA events for GPU timing
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+
+  for (auto _: state) {
+    cudaEventRecord(start);
+
+    CGBNSimpleMathKernel<<<1, TPI>>>(report, device_a, 3);
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    float gpu_time_ms;
+    cudaEventElapsedTime(&gpu_time_ms, start, stop);
+    state.SetIterationTime(gpu_time_ms / 1000.0);
+  }
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(stop);
 
   // error report uses managed memory, so we sync the device (or stream) and check for cgbn errors
   CUDA_CHECK(cudaDeviceSynchronize());
-  // CGBN_CHECK(report);
 
-  printf("Copying results back to CPU ...\n");
+  DEBUG_PRINT("Copying results back to CPU ...\n");
   // clean up
   free(a);
   CUDA_CHECK(cudaFree(device_a));

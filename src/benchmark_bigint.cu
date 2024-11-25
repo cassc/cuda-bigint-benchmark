@@ -94,6 +94,7 @@ void BM_BigIntSimpleMath(benchmark::State& state)
   cudaEvent_t start, stop;
   cudaEventCreate(&start);
   cudaEventCreate(&stop);
+
   for (auto _: state) {
     cudaEventRecord(start);
 

@@ -12,6 +12,11 @@ project("CudaBigIntBenchmark"
 
 enable_language(CUDA)
 
+option(ENABLE_DEBUG "Enable debug printing" OFF)
+if(ENABLE_DEBUG)
+    add_compile_definitions(ENABLE_DEBUG)
+  endif()
+
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CUDA_STANDARD 20)
 set(CUDA_COMPUTE_CAPABILITY "50" CACHE STRING "CUDA Compute Capability")
