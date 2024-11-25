@@ -46,10 +46,11 @@ typedef cgbn_mem_t<BITS> word_t;
 
 // define the kernel
 __global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
-  auto idx = threadIdx.x + blockIdx.x * blockDim.x;
-  if (idx != 0) return;
+  auto instance_idx = (threadIdx.x + blockIdx.x * blockDim.x) / TPI;
+  if (instance_idx != 0) return;
+  printf("instance_idx %d threadIdx.x %d\n", instance_idx, threadIdx.x);
 
-  context_t      bn_context(cgbn_report_monitor, report, idx);
+  context_t      bn_context(cgbn_report_monitor, report, instance_idx);
   env_t          bn_env(bn_context.env<env_t>());
   env_t::cgbn_t  a, b, result, r;
 
