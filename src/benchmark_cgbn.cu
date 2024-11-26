@@ -5,28 +5,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <CGBN/cgbn.h>
-
-#define CGBN_CHECK(report) cgbn_check(report, __FILE__, __LINE__)
-
-// Define CUDA_CHECK_THROW macro
-#define CUDA_CHECK(call) do {					\
-    cudaError_t err = call;                                             \
-    if (err != cudaSuccess) {                                           \
-      std::cerr << "CUDA call failed: " << #call << "\n"                \
-                << "Error code: " << err << "\n"                        \
-                << "Error string: " << cudaGetErrorString(err)          \
-                << " (at " << __FILE__ << ":" << __LINE__ << ")"        \
-                << std::endl;                                           \
-      throw std::runtime_error(cudaGetErrorString(err));                \
-    }                                                                   \
-  } while (0)
-
-
-#ifdef ENABLE_DEBUG
-#define DEBUG_PRINT(fmt, ...) printf(fmt, ##__VA_ARGS__)
-#else
-#define DEBUG_PRINT(fmt, ...) do {} while (0)
-#endif
+#include "benchmark.cuh"
 
 #define TPI 8
 #define BITS 256
@@ -45,8 +24,8 @@ typedef env_t::cgbn_t bn_t;
 
 typedef cgbn_mem_t<BITS> word_t;
 
-// define the kernel
-__global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
+
+__global__ void CGBNSimpleMulKernel(cgbn_error_report_t *report, word_t *words, uint32_t count) {
   int32_t tid, instance;
 
   tid = (blockIdx.x*blockDim.x + threadIdx.x);
@@ -76,7 +55,7 @@ __global__ void CGBNSimpleMathKernel(cgbn_error_report_t *report, word_t *words,
   assert(equal == 0);
 }
 
-void BM_CGBNSimpleMath(benchmark::State& state)
+void BM_CGBNSimpleMul(benchmark::State& state)
 {
   cgbn_error_report_t *report;
 
@@ -124,7 +103,98 @@ void BM_CGBNSimpleMath(benchmark::State& state)
   for (auto _: state) {
     cudaEventRecord(start);
 
-    CGBNSimpleMathKernel<<<1, TPI>>>(report, device_a, 3);
+    CGBNSimpleMulKernel<<<1, TPI>>>(report, device_a, 3);
+
+    cudaEventRecord(stop);
+    cudaEventSynchronize(stop);
+
+    float gpu_time_ms;
+    cudaEventElapsedTime(&gpu_time_ms, start, stop);
+    state.SetIterationTime(gpu_time_ms / 1000.0);
+  }
+
+  cudaEventDestroy(start);
+  cudaEventDestroy(stop);
+
+  // error report uses managed memory, so we sync the device (or stream) and check for cgbn errors
+  CUDA_CHECK(cudaDeviceSynchronize());
+
+  DEBUG_PRINT("Copying results back to CPU ...\n");
+  // clean up
+  free(a);
+  CUDA_CHECK(cudaFree(device_a));
+  CUDA_CHECK(cgbn_error_report_free(report));
+}
+
+
+__global__ void CGBNLargeArrayAddKernel(cgbn_error_report_t *report, word_t *words, word_t *output, uint32_t count) {
+  int32_t tid, instance;
+
+  tid = (blockIdx.x*blockDim.x + threadIdx.x);
+  instance = tid/TPI;
+
+  if(instance>=count) return;
+
+  context_t bn_context(cgbn_report_monitor, report, instance);
+  env_t bn_env(bn_context.env<env_t>());
+  bn_t a, b, r;
+
+  if (tid == 0) DEBUG_PRINT("Check first word\n");
+  // assert(1558243763 == words->_limbs[3]);
+
+  cgbn_load(bn_env, a, words);
+  cgbn_load(bn_env, b, words);
+  cgbn_add(bn_env, r, a, b);
+
+  cgbn_store(bn_env, output, r);
+}
+
+void BM_CGBNLargeArrayAddition(benchmark::State& state)
+{
+
+  maybeInitDevice();
+  auto size = 500'000;
+
+  auto threads_per_block = 32;
+  auto num_blocks = (TPI * size) / threads_per_block + 1;
+
+  cgbn_error_report_t *report;
+
+  word_t *a = (word_t *)malloc(sizeof(word_t)* size);
+  for (int i = 0; i < size; i++) {
+    for (auto j = 0; j < 8; j++){
+      (a+i)->_limbs[j] = 0;
+    }
+    (a+i)->_limbs[4] = 2;
+    (a+i)->_limbs[3] = 3051597590;
+    (a+i)->_limbs[2] = 2978480132;
+    (a+i)->_limbs[1] = 1733254032;
+    (a+i)->_limbs[0] = 962890631;
+  }
+
+  DEBUG_PRINT("Copying instances to the GPU ...\n");
+  word_t *device_a, *device_output;
+  CUDA_CHECK(cudaMalloc((void **)&device_a, sizeof(word_t)* size));
+  CUDA_CHECK(cudaMemcpy(device_a, a, sizeof(word_t)*size, cudaMemcpyHostToDevice));
+
+  CUDA_CHECK(cudaMalloc((void **)&device_output, sizeof(word_t)* size));
+
+  // create a cgbn_error_report for CGBN to report back errors
+  CUDA_CHECK(cgbn_error_report_alloc(&report));
+
+  DEBUG_PRINT("Running GPU kernel ...\n");
+
+  CUDA_CHECK(cudaDeviceSynchronize());
+
+  // CUDA events for GPU timing
+  cudaEvent_t start, stop;
+  cudaEventCreate(&start);
+  cudaEventCreate(&stop);
+
+  for (auto _: state) {
+    cudaEventRecord(start);
+
+    CGBNLargeArrayAddKernel<<<num_blocks, threads_per_block>>>(report, device_a, device_output, size);
 
     cudaEventRecord(stop);
     cudaEventSynchronize(stop);
