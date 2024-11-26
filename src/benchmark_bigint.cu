@@ -8,6 +8,9 @@
 #include <iostream>
 #include "benchmark.cuh"
 
+using namespace std;
+
+
 __global__ void BigIntSimpleMulTest_kernel(bigint* a) {
   auto idx = threadIdx.x + blockIdx.x * blockDim.x;
   if (idx != 0) return;
@@ -114,13 +117,16 @@ void BM_BigIntSimpleMul(benchmark::State& state)
   CUDA_CHECK(cudaFree(device_a));
 }
 
-void BM_BigIntLargeArrayAddition(benchmark::State& state)
+void BM_BigIntLargeArrayAddition(benchmark::State& state, int size, int threads_per_block)
 {
 
   maybeInitDevice();
-  auto size = 500'000;
-  int threads_per_block = 32;
   auto num_blocks = size / threads_per_block + 1;
+
+  cout << "BM_CGBNLargeArrayAddition test configuration:" << endl;
+  cout << "Array size: " << size << endl;
+  cout << "num_blocks: " << num_blocks << endl;
+  cout << "threads_per_block: " << threads_per_block << endl;
 
   const char *text = "922337203685477580881231245678901234567";
   bigint *a, *device_a, *device_output;

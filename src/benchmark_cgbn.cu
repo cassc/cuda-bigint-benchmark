@@ -7,9 +7,10 @@
 #include <CGBN/cgbn.h>
 #include "benchmark.cuh"
 
+using namespace std;
+
 #define TPI 8
 #define BITS 256
-
 
 // 8 threads and 256 bits integer
 #if defined(__CUDA_ARCH__)
@@ -149,14 +150,18 @@ __global__ void CGBNLargeArrayAddKernel(cgbn_error_report_t *report, word_t *wor
   cgbn_store(bn_env, output, r);
 }
 
-void BM_CGBNLargeArrayAddition(benchmark::State& state)
+void BM_CGBNLargeArrayAddition(benchmark::State& state, int size, int threads_per_block)
 {
 
   maybeInitDevice();
-  auto size = 500'000;
 
-  auto threads_per_block = 32;
   auto num_blocks = (TPI * size) / threads_per_block + 1;
+
+  cout << "BM_CGBNLargeArrayAddition test configuration:" << endl;
+  cout << "Array size: " << size << endl;
+  cout << "num_blocks: " << num_blocks << endl;
+  cout << "threads_per_block: " << threads_per_block << endl;
+
 
   cgbn_error_report_t *report;
 

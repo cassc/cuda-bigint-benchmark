@@ -26,9 +26,10 @@
 
 
 void BM_BigIntSimpleMul(benchmark::State& state);
-void BM_CGBNSimpleMul(benchmark::State& state);
-void BM_BigIntLargeArrayAddition(benchmark::State& state);
+void BM_BigIntLargeArrayAddition(benchmark::State& state, int size=500'000, int threads_per_block=32);
 
+void BM_CGBNSimpleMul(benchmark::State& state);
+void BM_CGBNLargeArrayAddition(benchmark::State& state, int size=500'000, int threads_per_block=32);
 
 static bool device_initialized = false;
 
