@@ -73,7 +73,6 @@ BENCHMARK(BM_BigIntLargeArrayAddition_512)->UseManualTime();
 BENCHMARK(BM_BigIntLargeArrayAddition_1024)->UseManualTime();
 
 BENCHMARK(BM_CGBNLargeArrayAddition_8)->UseManualTime();
-BENCHMARK(BM_CGBNLargeArrayAddition_8)->UseManualTime();
 BENCHMARK(BM_CGBNLargeArrayAddition_32)->UseManualTime();
 BENCHMARK(BM_CGBNLargeArrayAddition_64)->UseManualTime();
 BENCHMARK(BM_CGBNLargeArrayAddition_128)->UseManualTime();
