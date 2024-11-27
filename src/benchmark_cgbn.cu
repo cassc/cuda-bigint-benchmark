@@ -147,7 +147,7 @@ __global__ void CGBNLargeArrayAddKernel(cgbn_error_report_t *report, word_t *wor
   cgbn_load(bn_env, b, words);
   cgbn_add(bn_env, r, a, b);
 
-  cgbn_store(bn_env, output, r);
+  cgbn_store(bn_env, output + instance, r);
 }
 
 void BM_CGBNLargeArrayAddition(benchmark::State& state, int size, int threads_per_block)
@@ -157,13 +157,14 @@ void BM_CGBNLargeArrayAddition(benchmark::State& state, int size, int threads_pe
 
   auto num_blocks = (TPI * size) / threads_per_block + 1;
 
-  cout << "BM_CGBNLargeArrayAddition test configuration:" << endl;
-  cout << "Array size: " << size << endl;
-  cout << "num_blocks: " << num_blocks << endl;
-  cout << "threads_per_block: " << threads_per_block << endl;
-
+  // cout << "\nBM_CGBNLargeArrayAddition test configuration:" << endl;
+  // cout << "Array size: " << size << endl;
+  // cout << "Config: " << num_blocks << " X " << threads_per_block  << endl;
 
   cgbn_error_report_t *report;
+  word_t expected = {
+    ._limbs = {1925781262, 3466508064, 1661992968, 1808227885, 5, 0, 0, 0}
+  };
 
   word_t *a = (word_t *)malloc(sizeof(word_t)* size);
   for (int i = 0; i < size; i++) {
@@ -197,25 +198,33 @@ void BM_CGBNLargeArrayAddition(benchmark::State& state, int size, int threads_pe
   cudaEventCreate(&stop);
 
   for (auto _: state) {
-    cudaEventRecord(start);
+    CUDA_CHECK(cudaEventRecord(start));
 
     CGBNLargeArrayAddKernel<<<num_blocks, threads_per_block>>>(report, device_a, device_output, size);
 
-    cudaEventRecord(stop);
-    cudaEventSynchronize(stop);
+    CUDA_CHECK(cudaEventRecord(stop));
+    CUDA_CHECK(cudaEventSynchronize(stop));
 
     float gpu_time_ms;
-    cudaEventElapsedTime(&gpu_time_ms, start, stop);
+    CUDA_CHECK(cudaEventElapsedTime(&gpu_time_ms, start, stop));
     state.SetIterationTime(gpu_time_ms / 1000.0);
   }
 
-  cudaEventDestroy(start);
-  cudaEventDestroy(stop);
+  CUDA_CHECK(cudaEventDestroy(start));
+  CUDA_CHECK(cudaEventDestroy(stop));
 
   // error report uses managed memory, so we sync the device (or stream) and check for cgbn errors
   CUDA_CHECK(cudaDeviceSynchronize());
 
   DEBUG_PRINT("Copying results back to CPU ...\n");
+
+  CUDA_CHECK(cudaMemcpy(a, device_output, sizeof(word_t)*size, cudaMemcpyDeviceToHost));
+  for (int i = 0; i < size; i++) {
+    for (auto j = 0; j < 8; j++){
+      assert((a+i)->_limbs[j] == expected._limbs[j]);
+    }
+  }
+
   // clean up
   free(a);
   CUDA_CHECK(cudaFree(device_a));

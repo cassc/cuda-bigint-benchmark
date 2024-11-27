@@ -38,7 +38,7 @@ inline void maybeInitDevice(){
     return;
   }
   device_initialized = true;
-  size_t heap_size = size_t(2) << 30;
+  size_t heap_size = 4l * 1024 * 1024 * 1024;
   CUDA_CHECK(cudaDeviceSetLimit(cudaLimitMallocHeapSize, heap_size));
 }
 

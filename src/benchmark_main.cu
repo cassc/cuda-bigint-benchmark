@@ -2,63 +2,75 @@
 #include "benchmark.cuh"
 
 
-BENCHMARK(BM_BigIntSimpleMul)->UseManualTime();
-
-BENCHMARK(BM_CGBNSimpleMul)->UseManualTime();
+void BM_CGBNLargeArrayAddition_8(benchmark::State& state){
+  BM_CGBNLargeArrayAddition(state, 500, 8);
+}
 
 void BM_CGBNLargeArrayAddition_32(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 32);
+  BM_CGBNLargeArrayAddition(state, 500, 32);
 }
 
 void BM_CGBNLargeArrayAddition_64(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 64);
+  BM_CGBNLargeArrayAddition(state, 500, 64);
 }
 
 void BM_CGBNLargeArrayAddition_128(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 128);
+  BM_CGBNLargeArrayAddition(state, 500, 128);
 }
 
 void BM_CGBNLargeArrayAddition_256(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 256);
+  BM_CGBNLargeArrayAddition(state, 500, 256);
 }
 
 void BM_CGBNLargeArrayAddition_512(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 512);
+  BM_CGBNLargeArrayAddition(state, 500, 512);
 }
 
 void BM_CGBNLargeArrayAddition_1024(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 1024);
+  BM_CGBNLargeArrayAddition(state, 500, 1024);
 }
 
-void BM_CGBNLargeArrayAddition_8(benchmark::State& state){
-  BM_CGBNLargeArrayAddition(state, 500'000, 8);
+void BM_BigIntLargeArrayAddition_8(benchmark::State& state){
+  BM_BigIntLargeArrayAddition(state, 500, 8);
 }
-
 
 void BM_BigIntLargeArrayAddition_32(benchmark::State& state){
-  BM_BigIntLargeArrayAddition(state, 500'000, 32);
+  BM_BigIntLargeArrayAddition(state, 500, 32);
 }
 
 void BM_BigIntLargeArrayAddition_64(benchmark::State& state){
-  BM_BigIntLargeArrayAddition(state, 500'000, 64);
+  BM_BigIntLargeArrayAddition(state, 500, 64);
 }
 
 void BM_BigIntLargeArrayAddition_128(benchmark::State& state){
-  BM_BigIntLargeArrayAddition(state, 500'000, 128);
+  BM_BigIntLargeArrayAddition(state, 500, 128);
 }
 
 void BM_BigIntLargeArrayAddition_256(benchmark::State& state){
-  BM_BigIntLargeArrayAddition(state, 500'000, 256);
+  BM_BigIntLargeArrayAddition(state, 500, 256);
 }
 
 void BM_BigIntLargeArrayAddition_512(benchmark::State& state){
-  BM_BigIntLargeArrayAddition(state, 500'000, 512);
+  BM_BigIntLargeArrayAddition(state, 500, 512);
 }
 
 void BM_BigIntLargeArrayAddition_1024(benchmark::State& state){
-  BM_BigIntLargeArrayAddition(state, 500'000, 1024);
+  BM_BigIntLargeArrayAddition(state, 500, 1024);
 }
 
+
+BENCHMARK(BM_BigIntSimpleMul)->UseManualTime();
+BENCHMARK(BM_CGBNSimpleMul)->UseManualTime();
+
+BENCHMARK(BM_CGBNLargeArrayAddition_8)->UseManualTime();
+BENCHMARK(BM_BigIntLargeArrayAddition_8)->UseManualTime();
+
+BENCHMARK(BM_BigIntLargeArrayAddition_32)->UseManualTime();
+BENCHMARK(BM_BigIntLargeArrayAddition_64)->UseManualTime();
+BENCHMARK(BM_BigIntLargeArrayAddition_128)->UseManualTime();
+BENCHMARK(BM_BigIntLargeArrayAddition_256)->UseManualTime();
+BENCHMARK(BM_BigIntLargeArrayAddition_512)->UseManualTime();
+BENCHMARK(BM_BigIntLargeArrayAddition_1024)->UseManualTime();
 
 BENCHMARK(BM_CGBNLargeArrayAddition_8)->UseManualTime();
 BENCHMARK(BM_CGBNLargeArrayAddition_32)->UseManualTime();
@@ -68,11 +80,5 @@ BENCHMARK(BM_CGBNLargeArrayAddition_256)->UseManualTime();
 BENCHMARK(BM_CGBNLargeArrayAddition_512)->UseManualTime();
 BENCHMARK(BM_CGBNLargeArrayAddition_1024)->UseManualTime();
 
-BENCHMARK(BM_BigIntLargeArrayAddition_32)->UseManualTime();
-BENCHMARK(BM_BigIntLargeArrayAddition_64)->UseManualTime();
-BENCHMARK(BM_BigIntLargeArrayAddition_128)->UseManualTime();
-BENCHMARK(BM_BigIntLargeArrayAddition_256)->UseManualTime();
-BENCHMARK(BM_BigIntLargeArrayAddition_512)->UseManualTime();
-BENCHMARK(BM_BigIntLargeArrayAddition_1024)->UseManualTime();
 
 BENCHMARK_MAIN();
