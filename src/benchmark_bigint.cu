@@ -232,6 +232,8 @@ void BM_BigIntLargeArrayAddition_heap(benchmark::State& state, int size, int thr
 void BM_BigIntLargeArrayAddition(benchmark::State& state, int size, int threads_per_block)
 {
   maybeInitDevice();
+  auto num_blocks = size / threads_per_block + 1;
+
   const char *text = "123456790123456790120987654320987654321";
   const char *expected = "15241579027587258039323273891175125743036122542295381801554580094497789971041";
   bigint a[size];
@@ -278,7 +280,7 @@ void BM_BigIntLargeArrayAddition(benchmark::State& state, int size, int threads_
   for (auto _: state) {
     CUDA_CHECK(cudaEventRecord(start));
 
-    BigIntArrayTest_kernel<<<10, 32>>>(device_a, device_output, size);
+    BigIntArrayTest_kernel<<<num_blocks, threads_per_block>>>(device_a, device_output, size);
 
     CUDA_CHECK(cudaEventRecord(stop));
     CUDA_CHECK(cudaEventSynchronize(stop));
