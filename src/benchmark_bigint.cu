@@ -48,13 +48,7 @@ __global__ void BigIntArrayTest_kernel(bigint* a, bigint* output, int size) {
   assert(a[idx].size > 0);
 
   bigint_add(output + idx, a+idx, a + idx);
-
-  bigint expected;
-  bigint_init(&expected);
-  bigint_from_int(&expected, 0);
-
-  assert(bigint_cmp(output + idx, &expected) != 0);
-
+  // memory allocation on device is very slow
 }
 
 void BM_BigIntSimpleMul(benchmark::State& state)
@@ -234,16 +228,30 @@ void BM_BigIntLargeArrayAddition(benchmark::State& state, int size, int threads_
   maybeInitDevice();
   auto num_blocks = size / threads_per_block + 1;
 
-  const char *text = "123456790123456790120987654320987654321";
-  const char *expected = "15241579027587258039323273891175125743036122542295381801554580094497789971041";
-  bigint a[size];
+  const char *text = "15241579027587258039323273891175125743036122542295381801554580094497789971041";
+  const char *expected_text = "30483158055174516078646547782350251486072245084590763603109160188995579942082";
+  bigint a[size], expected;
   bigint *device_a, *device_output;
+  bigint_init(&expected);
   for (int i = 0; i < size; i++) bigint_init(a + i);
 
   for (auto i = 0; i < size; i++){
     bigint_from_str_base(a+i, text, 10);
   }
 
+
+  auto capacity = a[0].capacity;
+
+  bigint_from_str(&expected, expected_text);
+
+  // printf("expected 0 %u\n", *(expected.words+ 0));
+  // printf("expected 1 %u\n", *(expected.words+ 1));
+  // printf("expected 2 %u\n", *(expected.words+ 2));
+  // printf("expected 3 %u\n", *(expected.words+ 3));
+  // printf("expected 4 %u\n", *(expected.words+ 4));
+  // printf("expected 5 %u\n", *(expected.words+ 5));
+  // printf("expected 6 %u\n", *(expected.words+ 6));
+  // printf("expected 7 %u\n", *(expected.words+ 7));
 
   DEBUG_PRINT("CudaTestBigIntFromStrBase: sizeof(a) %ld\n", sizeof(a));
 
@@ -296,6 +304,28 @@ void BM_BigIntLargeArrayAddition(benchmark::State& state, int size, int threads_
 
   CUDA_CHECK(cudaDeviceSynchronize());
 
-  // todo how to free the two pointers in the device?
+  CUDA_CHECK(cudaMemcpy(a, device_output, sizeof(bigint)*size, cudaMemcpyDeviceToHost));
+
+  for (int i = 0; i < size; i++) {
+    bigint_word *tmp = (bigint_word*)malloc(a[i].capacity * sizeof(bigint_word));
+    assert(tmp != NULL);
+    assert(capacity == a[i].capacity);  // Device expanded capacity, things will break
+    CUDA_CHECK(cudaMemcpy(tmp, a[i].words, a[i].size * sizeof(bigint_word), cudaMemcpyDeviceToHost));
+    a[i].words = tmp;
+  }
+
+  // for (int i = 0; i < size; i++) {
+  //   printf("a 0 %u\n", *(a[i].words+ 0));
+  //   printf("a 1 %u\n", *(a[i].words+ 1));
+  //   printf("a 2 %u\n", *(a[i].words+ 2));
+  //   printf("a 3 %u\n", *(a[i].words+ 3));
+  //   printf("a 4 %u\n", *(a[i].words+ 4));
+  //   printf("a 5 %u\n", *(a[i].words+ 5));
+  //   printf("a 6 %u\n", *(a[i].words+ 6));
+  //   printf("a 7 %u\n", *(a[i].words+ 7));
+  //   assert(0 == bigint_cmp(a+i, &expected));
+  // }
+
   CUDA_CHECK(cudaFree(device_a));
+  CUDA_CHECK(cudaFree(device_output));
 }
