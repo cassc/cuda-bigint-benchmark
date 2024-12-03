@@ -38,20 +38,20 @@ The following result is from a GTX 3060 Ti GPU.
 ---------------------------------------------------------------------------------------
 Benchmark                                             Time             CPU   Iterations
 ---------------------------------------------------------------------------------------
-BM_BigIntSimpleMul/manual_time                    34609 ns        41200 ns        19969
-BM_CGBNSimpleMul/manual_time                       4220 ns         9632 ns       164757
-BM_BigIntLargeArrayAddition_8/manual_time         10534 ns        16435 ns        65341
-BM_BigIntLargeArrayAddition_32/manual_time         8488 ns        14070 ns        82066
-BM_BigIntLargeArrayAddition_64/manual_time         8407 ns        14134 ns        80105
-BM_BigIntLargeArrayAddition_128/manual_time        9380 ns        14954 ns        73786
-BM_BigIntLargeArrayAddition_256/manual_time        9757 ns        15400 ns        71272
-BM_BigIntLargeArrayAddition_512/manual_time       13627 ns        19397 ns        51057
-BM_BigIntLargeArrayAddition_1024/manual_time      24586 ns        30580 ns        28582
-BM_CGBNLargeArrayAddition_8/manual_time           16145 ns        22291 ns        43714
-BM_CGBNLargeArrayAddition_32/manual_time           8437 ns        14027 ns        83367
-BM_CGBNLargeArrayAddition_64/manual_time           9319 ns        14948 ns        74827
-BM_CGBNLargeArrayAddition_128/manual_time         10869 ns        16748 ns        65128
-BM_CGBNLargeArrayAddition_256/manual_time         10802 ns        16751 ns        64037
-BM_CGBNLargeArrayAddition_512/manual_time          9352 ns        15029 ns        74459
-BM_CGBNLargeArrayAddition_1024/manual_time        10549 ns        16183 ns        66655
+BM_BigIntSimpleMul/manual_time                    34747 ns        41742 ns        19946
+BM_BigIntLargeArrayAddition_8/manual_time         10550 ns        16436 ns        66619
+BM_BigIntLargeArrayAddition_32/manual_time         8440 ns        14332 ns        80911
+BM_BigIntLargeArrayAddition_64/manual_time         8623 ns        14386 ns        83025
+BM_BigIntLargeArrayAddition_128/manual_time        9541 ns        15256 ns        75920
+BM_BigIntLargeArrayAddition_256/manual_time        9834 ns        15517 ns        70995
+BM_BigIntLargeArrayAddition_512/manual_time       13835 ns        19774 ns        51668
+BM_BigIntLargeArrayAddition_1024/manual_time      24539 ns        30847 ns        28569
+BM_CGBNSimpleMul/manual_time                       3436 ns         8865 ns       203437
+BM_CGBNLargeArrayAddition_8/manual_time            9119 ns        14692 ns        76712
+BM_CGBNLargeArrayAddition_32/manual_time           5307 ns        10764 ns       128862
+BM_CGBNLargeArrayAddition_64/manual_time           4530 ns        10054 ns       154759
+BM_CGBNLargeArrayAddition_128/manual_time          4332 ns         9801 ns       161792
+BM_CGBNLargeArrayAddition_256/manual_time          4222 ns         9702 ns       166110
+BM_CGBNLargeArrayAddition_512/manual_time          4219 ns         9657 ns       166432
+BM_CGBNLargeArrayAddition_1024/manual_time         4730 ns        10329 ns       149331
 ```
