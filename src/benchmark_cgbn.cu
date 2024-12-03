@@ -10,7 +10,7 @@
 
 using namespace std;
 
-#define TPI 4
+#define TPI 2
 #define BITS 256
 
 
