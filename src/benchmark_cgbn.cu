@@ -4,7 +4,8 @@
 #include <assert.h>
 #include <stdexcept>
 #include <iostream>
-#include <CGBN/cgbn.h>
+#include <gmp.h>
+#include <cgbn/cgbn.h>
 #include "benchmark.cuh"
 
 using namespace std;
@@ -12,13 +13,8 @@ using namespace std;
 #define TPI 8
 #define BITS 256
 
-// 8 threads and 256 bits integer
-#if defined(__CUDA_ARCH__)
-typedef cgbn_context_t<TPI>         context_t;
-#else
-typedef cgbn_host_context_t<TPI>         context_t;
-#endif
 
+typedef cgbn_context_t<TPI>         context_t;
 typedef cgbn_env_t<context_t, BITS> env_t;
 
 typedef env_t::cgbn_t bn_t;
